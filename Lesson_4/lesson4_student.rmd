@@ -1,0 +1,376 @@
+---
+output:
+  pdf_document: default
+  html_document: default
+---
+Lesson 4
+========================================================
+
+### Scatterplots
+We can see if friend count varies by the age of users on Facebook
+```{r Scatterplots}
+#install.packages('ggplot2')
+#install.packages('dplyr')
+library(ggplot2)
+pf <- read.csv('pseudo_facebook.tsv', sep = '\t')
+
+qplot(x=age, y=friend_count, data=pf)
+#don't need to write x and y explicitly for qplot so could have written:
+# qplot(age, friend_count, data=pf)
+```
+
+***
+
+#### What are some things that you notice right away?
+Response:
+There are vertical bars where people have lied about their age - e.g. 69 and 100. These users are likely to be teenagers or fake accounts given the hugh friend counts.
+There are lots of normal peaks at regular intervals.
+The users with the most friends are typically under 30.
+
+***
+
+### ggplot Syntax
+Notes:
+Same graph using ggplot:
+```{r ggplot Syntax}
+ggplot(aes(x=age, y=friend_count), data =pf) + geom_point()
+
+summary(pf$age)
+```
+Summary shows min age is 13 and max is 113. We can clip the x axis to start at 13 and go as far as 113. This is useful as you can't use facebook if you're younger than 13 and we're not confident about the data we have for the over 90s are truthful.
+We use xlim() to limit the ages on the x axis.
+***
+```{r}
+ggplot(aes(x=age, y=friend_count), data =pf) + geom_point() + 
+  xlim(13, 90)
+```
+
+### Overplotting
+Notes:
+Overplotting occurs in the above graph where all the points are on top of each other and the graph just looks black. Overplotting makes it difficult to tell how many points are in a region. We can set the transparency of points using the alpha parameter in geom_point().
+You can also set the transparency with geom_jitter() to get a more dispersed distribution instaed of the columns of points you get with geom_point.
+```{r Overplotting}
+ggplot(aes(x=age, y=friend_count), data =pf) + geom_jitter(alpha=1/20) + 
+  xlim(13, 90)
+```
+
+#### What do you notice in the plot?
+Response:
+We can see that the friend count for young users dont look as high as before. The bulk of young users have friend count below 1000.
+There's a faint peak around the gae of 69 wich is comparable to that of the age 25 group
+***
+
+### Coord_trans()
+
+```{r Coord_trans()}
+ggplot(aes(x=age, y=friend_count), data =pf) + 
+  geom_point(alpha=1/20, position = position_jitter(h=0)) + 
+  xlim(13, 90) +
+  coord_trans(y = 'sqrt') #transform y axis to square root values
+```
+
+
+#### What do you notice?
+With this plot it's much easier to see the distribution of friend count conditional on age. For example we can see threshold count above which there are very few users.
+We had to go back to using geom_point. If we want to add jitter we need better syntax to specify we only want to jitter the ages.
+We have to be careful because some people have a friend count of 0 and adding noise will result in negative numbers for some of friend counts and those square roots would be imaginary. To make this adjustment set the position parameter equal to jitter and then pass a minimum height of 0
+***
+
+### Alpha and Jitter
+Notes:
+Explore relationship between friends initiated and age
+```{r Alpha and Jitter}
+ggplot(aes(x=age, y= friendships_initiated), data = pf) +
+  geom_point(alpha = 1/10, position = position_jitter(h=0)) +
+  xlim(13,90) +
+  coord_trans(y = 'sqrt')
+```
+
+
+***
+
+### Conditional Means
+dplyr lets us split up the datframe and apply a function to some parts of the data. 
+It can be helpful to not just plot all points but to plot against the mean or median friend count for each age
+```{r Conditional Means}
+#install.packages('ggplot2')
+library(dplyr)
+
+#group dataframe by age and store it in age_groups
+age_groups <- group_by(pf, age)
+
+# summarise this new grouping of data and create new variables of mean
+# friend count, median friend count & the number of people in each group
+# Save all of this in a new variable pf.fc_by_age
+pf.fc_by_age <- summarise(age_groups, 
+          friend_count_mean = mean(friend_count),
+          friend_count_median = median(friend_count),
+          n = n()) #number of users in each group. 
+# n fxn can only be used in summarise and it reports how many people
+# are in each group
+
+#Order data by age
+pf.fc_by_age <- arrange(pf.fc_by_age, age)
+
+#print first few rows of dataframe
+head(pf.fc_by_age)
+
+```
+
+Alternative method for acheiving the above:
+```{r}
+# %>% allows you to chain fxns on to dataset. i.e. perform one fxn at a
+# time, one after the other on the dataframe
+
+pf.fc_by_age <- pf %>%
+  group_by(age) %>% #first group by age
+  summarise( friend_count_mean = mean(friend_count), 
+          friend_count_median = median(friend_count),
+          n = n()) %>% #add one more fxn with this %>%
+  arrange(age)
+  
+head(pf.fc_by_age)
+```
+
+Create your plot!
+Plot mean friend count vs. age using a line graph.
+```{r Conditional Means Plot}
+library(ggplot2)
+ggplot(aes(x=age, y=friend_count_mean), data = pf.fc_by_age) +
+  geom_line() +
+  xlim(13,90)
+```
+
+***
+
+### Overlaying Summaries with Raw Data
+Overlay plots of the mean and the 10th, 90th and 50th percent quartile in order to give some more context to the graph.
+
+```{r Overlaying Summaries with Raw Data}
+library(ggplot2)
+ggplot(aes(x=age, y= friendships_initiated), data = pf) +
+  geom_point(alpha = 1/10, position = position_jitter(h=0), color='orange') +
+  coord_cartesian(xlim = c(13, 90), ylim = c(0, 1000)) +
+  geom_line(stat = 'summary', fun.y = mean) +
+  geom_line(stat= 'summary', fun.y = quantile, fun.args = list(probs = .1), linetype =2, color='blue') +
+  geom_line(stat= 'summary', fun.y = quantile, fun.args = list(probs = .9), linetype =2, color='blue') +
+  geom_line(stat= 'summary', fun.y = quantile, fun.args = list(probs = .5), color='blue')
+# fun.args = list(probs = .9) gives the 90th percent quantile, linetype=2 makes it dashed 
+```
+
+#### What are some of your observations of the plot?
+Response:
+Having more than 1000 friends is quite rare, even for young users this is where it peaks and the 90th percentile is well below 1000.
+
+***
+
+### Correlation
+The correlation coefficient of two variables in a data set equals to their covariance divided by the product of their individual standard deviations. It is a normalized measurement of how the two are linearly related.
+If the correlation coefficient is close to 1, it would indicate that the variables are positively linearly related and the scatter plot falls almost along a straight line with positive slope. For -1, it indicates that the variables are negatively linearly related and the scatter plot almost falls along a straight line with negative slope. And for zero, it would indicate a weak linear relationship between the variables.
+
+A rule of thumb is that a correlation greater than 0.3 or less than -0.3 is meaningful, but small. around 0.5 is moderatre and 0.7 is large.
+```{r Correlation}
+#the default method for computing the correlation coefficient is Pearson. You do not need to pass the method parameter when calculating the Pearson Product Moment Correlation.
+cor.test(pf$age, pf$friend_count)
+
+#Another method:
+# The with fxn lets us evaluate an R expression in an environment constructed from the data. 
+# This codde gives the same result as above
+with(pf, cor.test(age, friend_count, method='pearson'))
+```
+
+Look up the documentation for the cor.test function.
+
+What's the correlation between age and friend count? Round to three decimal places.
+Response:
+cor 
+-0.027 . This implies that there isn't a meaningful relationship between age and friend count.
+***
+
+### Correlation on Subsets
+Based on the correlation co efficient and the above plot we just observed that the relationship between age and friend count is not linear. It isn't monotonic, either increasing or decreasing. Furthermore, based on the plot we know that we maybe don't want to include the older ages in our correlation number since older ages are likely to be incorrect. 
+Lets redo the plot for users aged 70 or less: 
+```{r Correlation on Subsets}
+with(subset(pf, age<=70), cor.test(age, friend_count))
+```
+This tells a different story about a negative relationship between age and friend count. As age increases friend count decreases. 
+***
+
+### Correlation Methods
+The pearson product measures the strength of a relationship between any two variables. But there can be lots of other types of relationships. 
+***
+
+## Create Scatterplots
+www_likes received includes ALL of the possible likes that could be received. It is expected that www_like_received and likes_received would have a strong correlation since one is a subset of the other.
+```{r}
+ggplot(aes(x=www_likes_received, y=likes_received), data=pf) +
+  geom_point(alpha=1/10) 
+```
+
+***
+
+### Strong Correlations
+The bulk of our data is in the bottom corner. To determine reasonable limits of x and y axis find out the 95th percentile of www_likes_received and likes_received. 
+The slope of the line of best fit through these ponts is the correlation. We can add it to the plot with geom_smooth. (lm stands for linear model)
+```{r Strong Correlations}
+ggplot(aes(x=www_likes_received, y=likes_received), data=pf) +
+  geom_point(alpha=1/10) +
+  xlim(0, quantile(pf$www_likes_received, 0.95)) +
+  ylim(0, quantile(pf$likes_received, 0.95)) +
+  geom_smooth(method='lm', color='red')
+```
+
+What's the correlation betwen the two variables? Include the top 5% of values for the variable in the calculation and round to 3 decimal places.
+
+```{r Correlation Calcuation}
+cor.test(pf$likes_received, pf$www_likes_received)
+```
+
+Response:
+This is a strong positive correlation and in reality not many variables are corelated that closely. The correlation we found was an artefact of the variables. One of them was a superset of the other
+***
+
+### More Caution with Correlation
+Correlation can help us decide which variables are related. Correlation co efficient can be deceptive. Plotting the data is the best way to understand it and help lead to key insights. 
+
+In order to explore how the correlation coefficient can be misleading we'll take a look at the Mitchell data set which is data collected on soil temperature.
+```{r More Caution With Correlation}
+#install.packages('alr3')
+library(alr3)
+data(Mitchell)
+str(Mitchell)
+```
+
+Create your plot!
+
+```{r Temp vs Month}
+ggplot(aes(x=Month, y=Temp), data=Mitchell) +
+  geom_point()
+```
+
+***
+
+### Noisy Scatterplots
+a. Take a guess for the correlation coefficient for the scatterplot.
+0
+b. What is the actual correlation of the two variables?
+0.057
+```{r Noisy Scatterplots}
+cor.test(Mitchell$Temp, Mitchell$Month)
+```
+
+***
+
+### Making Sense of Data
+Break up the axis every 12 month increments so that it corresponds to a year. Add scale_x_continuous layer to plot
+```{r Making Sense of Data}
+ggplot(aes(x=Month, y=Temp), data=Mitchell) +
+  geom_point() +
+  scale_x_continuous(breaks = seq(0, 203, 12))
+```
+You could also get perspective on this data by overlaying each year's data on top of each other, giving a clear, generally sinusoidal graph. You can do this by using the R's modulus operator %% in your code. 
+```{r}
+ggplot(aes(x=(Month%%12),y=Temp), data=Mitchell) +
+  geom_point()
+```
+
+
+***
+
+### A New Perspective
+
+What do you notice?
+There's a cyclical pattern. The cor() and cor.test() functions determine the strength of a linear relationship, but they may miss other relationships in the data.
+
+There are other measures of associations that can detect this. The dcor.ttest() function in the energy package implements a non-parametric test of the independence of two variables. While the Mitchell soil dataset is too coarse to identify a significant dependency between "Month" and "Temp", we can see the difference between dcor.ttest and cor.test through other examples, like the following:
+```{r}
+x <- seq(0, 4*pi, pi/20)
+y <- cos(x)
+qplot(x = x, y = y)
+dcor.ttest(x, y)
+
+```
+
+
+***
+
+### Understanding Noise: Age to Age Months
+Back to the Facebook data set:
+
+Assume the reference date for calculating age is December 31, 2013.  For example, the value of age_with_months for a 33 year old person born in March would be 33.75 since there are nine months from March to the end of the year. 
+```{r Understanding Noise: Age to Age Months}
+#create age with months variable to measure age in years and months
+pf$age_with_months <- pf$age + (12 - pf$dob_month)/12 
+```
+
+***
+
+### Age with Months Means
+Create a new data frame called pf.fc_by_age_months that contains the mean friend count, the median friend count, and the number of users in each group of age_with_months. The rows of the data frame should be arranged in increasing order by the age_with_months variable.
+```{r Age with Months Means}
+library(dplyr)
+age_months_groups <- group_by(pf, age_with_months)
+pf.fc_by_age_months <- summarise(age_months_groups,
+                                 friend_count_mean = mean(friend_count),
+                                 median_friend_count = median(friend_count),
+                                 n = n())
+pf.fc_by_age_months <- arrange(pf.fc_by_age_months, age_with_months)
+head(pf.fc_by_age_months)
+```
+
+Programming Assignment
+```{r Programming Assignment}
+ggplot(aes(x=age_with_months, y=friend_count_mean), 
+       data = subset (pf.fc_by_age_months, age_with_months<71)) +
+  geom_line() 
+```
+
+***
+
+### Noise in Conditional Means
+
+```{r Noise in Conditional Means}
+p1 <- ggplot(aes(x=age, y=friend_count_mean), 
+       data = subset (pf.fc_by_age, age<71)) +
+  geom_line() 
+
+p2 <- ggplot(aes(x=age_with_months, y=friend_count_mean), 
+       data = subset (pf.fc_by_age_months, age_with_months<71)) +
+  geom_line() 
+
+library(gridExtra)
+grid.arrange(p1, p2, ncol=1)
+```
+By decreasing the size of our bins (plotting in months instaed of years) we have less data to evaluate each conditional mean. We can see that the noise is a lot worse on the months graph.
+Similarly we can smooth out the graph by choosing bigger buns, e.g. we could group by every 5 years.
+***
+
+### Smoothing Conditional Means
+
+```{r Smoothing Conditional Means}
+library(gridExtra)
+p1 <- ggplot(aes(x=age, y=friend_count_mean), 
+       data = subset (pf.fc_by_age, age<71)) +
+  geom_line() +
+  geom_smooth()
+
+
+p2 <- ggplot(aes(x=age_with_months, y=friend_count_mean), 
+       data = subset (pf.fc_by_age_months, age_with_months<71)) +
+  geom_line() +
+  geom_smooth()
+
+p3 <- ggplot(aes(x=round(age/5)*5, y=friend_count), 
+       data = subset (pf, age<71)) +
+  geom_line(stat='summary', fun.y=mean)
+
+library(gridExtra)
+grid.arrange(p1, p2, p3, ncol=1)
+```
+
+***
+These graphs are an example of the bias variance trade off. One way to better make this trade off is  by using a flexible statistical model  to smooth our estimates of conditional means. ggplot allows to fit such models using geom_smooth. 
+While the smoother captures some of the featres of this relationship it doesnt draw attention to the non motonic relationship in the lower age. It also really misses the discontinuity at age 69. 
+
+***
+
