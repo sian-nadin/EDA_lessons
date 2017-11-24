@@ -1,0 +1,107 @@
+Demystifying R Part 2
+========================================================
+
+1. The summary() function gives us an idea of the values a variable can take on.
+```{r}
+summary(mtcars)
+```
+
+The str() and summary() functions are helpful commands when working with a new data set.
+The str() function gives us the variable names and their types.
+
+
+2. 
+Subset the data so that you create a new data frame called efficient that contains
+cars that get 23 or more mpg (miles per gallon). 
+```{r}
+efficient <- subset(mtcars, mpg >= 23)
+```
+
+3. How many cars get more than 23 mpg?
+```{r}
+dim(efficient)
+head(efficient, 10)
+```
+
+4. We can also use logical operators to find out which car(s) get greater
+than 30 miles per gallon (mpg) and have more than 100 raw horsepower.
+```{r}
+subset(mtcars, mpg > 30 & hp > 100)
+```
+
+Note: R uses one single & for the logical operator AND. It also uses one | for the logical operator OR.
+
+6. Print the cars that have a 1/4 mile time (qsec) less than or equal to
+16.90 seconds to the console.
+```{r}
+subset(mtcars, qsec<= 16.9)
+```
+
+7. Save the subset of cars that weigh under 2000 pounds (weight is measured in lb/1000)
+to a variable called lightCars. Print the numbers of cars and the subset to the console.
+```{r}
+lightCars <- subset(mtcars, wt<2.0 )
+dim(lightCars)
+head(lightCars)
+```
+
+8. You can also create new variables in a data frame:
+```{r}
+mtcars$year <- 1974
+```
+This assigns the year 1974 to all of the entries.
+
+To drop a variable:
+```{r}
+mtcars <- subset(mtcars, select = -year)
+```
+
+
+9. What do you think this code does? Run it to find out.
+```{r}
+mtcars$year <- c(1973, 1974)
+head(mtcars)
+```
+
+
+Drop the year variable from the data set.
+```{r}
+mtcars <- subset(mtcars, select = -year)
+```
+
+
+10. If else statements
+```{r}
+mtcars$wt
+cond <- mtcars$wt < 3
+cond #prints true if weight<3 and fa;se otherwise
+mtcars$weight_class <- ifelse(cond, 'light', 'average')
+mtcars$weight_class #if weight<3 true weight_class= light else weight_class=average
+cond <- mtcars$wt > 3.5
+mtcars$weight_class <- ifelse(cond, 'heavy', mtcars$weight_class)
+mtcars$weight_class
+```
+
+You have some variables in your workspace or environment like 'cond' and
+efficient. You want to be careful that you don't bring in too much data
+into R at once since R will hold all the data in working memory. We have
+nothing to worry about here, but let's delete those variables from the
+work space.
+
+```{r}
+rm(cond)
+rm(efficient)
+```
+
+Knit the HTNL document:
+```{r}
+#install.packages('knitr', dependencies = T)
+#library(knitr)
+```
+
+Which car(s) have an mpg (miles per gallon) greater than or equal to 30
+OR hp (horsepower) less than 60? yCreate an R chunk of code to answer the question.
+```{r}
+subset(mtcars, mpg >= 30 | hp < 60)
+```
+

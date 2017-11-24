@@ -1,6 +1,6 @@
 Lesson 3
 ========================================================
-# Read in data
+Read in the psuedo Facebook data.
 ```{r}
 #use sep to indicate file is tab seperated
 pf <- read.csv('pseudo_facebook.tsv', sep = '\t')
@@ -10,8 +10,7 @@ names(pf)
 ***
 
 ### Histogram of Users' Birthdays
-Notes:
-
+Initial plot of Facebook users birthdays
 ```{r Histogram of Users\' Birthdays}
 #install.packages('ggplot2')
 library(ggplot2)
@@ -24,22 +23,21 @@ qplot(x=dob_day, data=pf) +
 
 #### What are some things that you notice about this histogram?
 Response:
-# A large spike on the first day. This is the default so a lot of people probably didnt bother changing to correct date. The dip on the 31st is to be expected as not all months have 31 days in them
+A large spike on the first day. This is the default so a lot of people probably didnt bother changing to correct date. The dip on the 31st is to be expected as not all months have 31 days in them
 
 ***
 ### Faceting
-Notes:
 
 ```{r Faceting}
-# Get a plot for each of the 12 months. ncol specifies having 3 columns of histograms
+# Get a plot for each of the 12 months. 
 qplot(x=dob_day, data = pf) +
   scale_x_continuous(breaks = 1:31) +
-  facet_wrap(~dob_month, ncol =3)
+  facet_wrap(~dob_month, ncol =3) #ncol specifies having 3 columns of histograms
 ```
 
 #### Let’s take another look at our plot. What stands out to you here?
 Response:
-# The spike for the first date of a month only happens in January. Calendar must be preset to Jan 1st and people arent bothered changing it
+The spike for the first date of a month only happens in January. The calendar on Facebook is preset to Jan 1st and a lot f users probably aren't bothered changing the date which leads to the spike on Januray 1st.
 
 ***
 
@@ -77,7 +75,7 @@ qplot(x = friend_count, data = pf, binwidth = 10) +
 ***
 
 ### Omitting NA Values
-Notes: could use data=na.omit(pf) but this will omit any rows that have na for any of their values and not just gender
+Notes: We would like to omit the rows which have 'NA' as their gender. We could use data=na.omit(pf) but this will omit any rows that have NA for any of their values and not just gender. We can subset the data to only include the rows that don't have NA as gender.
 
 ```{r Omitting NA Values}
 qplot(x = friend_count, data = subset(pf, !is.na(gender)), binwidth = 10) +
@@ -89,8 +87,7 @@ qplot(x = friend_count, data = subset(pf, !is.na(gender)), binwidth = 10) +
 ***
 
 ### Statistics 'by' Gender
-Notes:
-
+Let's look at the statistics of friend count by gender
 ```{r Statistics \'by\' Gender}
 table(pf$gender)
 by(pf$friend_count, pf$gender, summary)
@@ -98,13 +95,12 @@ by(pf$friend_count, pf$gender, summary)
 
 
 #### Why would the median be a better measure than the mean?
-Response: Median is a more robust statistic. A few people with huge friend counts drag the mean upwards which isnt representative of most users. Median is not affected by these extreme values
+Response: Median is a more robust statistic. A few people with huge friend counts drag the mean upwards which isn't representative of most users. Median is not affected by these extreme values.
 
 ***
 
 ### Tenure
-Notes:
-
+Friend count will be affected by how long a user has been a member of Facebook so let's plot the tenure for Facebook users.
 ```{r Tenure}
 qplot(x=tenure, data = pf, binwidth=30, 
       color=I('black'), fill=I('#099DD9'))
@@ -113,7 +109,7 @@ qplot(x=tenure, data = pf, binwidth=30,
 ***
 
 #### How would you create a histogram of tenure by year?
-
+Divide tenure by 365 to get the number of years
 ```{r Tenure Histogram by Year}
 qplot(x=tenure/365, data = pf, binwidth=0.25, 
       color=I('black'), fill=I('#F79420')  )
@@ -122,7 +118,6 @@ qplot(x=tenure/365, data = pf, binwidth=0.25,
 ***
 
 ### Labeling Plots
-Notes:
 
 ```{r Labeling Plots}
 
@@ -136,24 +131,22 @@ qplot(x=tenure/365, data = pf, binwidth=0.25,
 
 ### User Ages
 Notes:
-Running summary(pf$age) will give min and max ages
-seq(0,113,5) goes from 0 to 113 in units of 5
+Running summary(pf$age) will give the min and max ages which will help us determine what scale to use for the x axis. The summary shows the minimum age is 13 and the max is 113.
 ```{r User Ages}
+summary(pf$age)
 qplot(x=age, data=pf, binwidth=1, xlab = "age", 
       ylab='Number of users in sample',
       color=I('black'), fill=I('#5760AB')) +
-      scale_x_continuous(breaks = seq(0,113,5))  
+      scale_x_continuous(breaks = seq(13,113,5)) #seq(0,113,5) goes from 0 to 113 in units of 5 on x axis
 ```
 
 ***
 
 ### Transforming Data
-Notes:
+Since the data is quite skewed we'll get the friend count in a log10 scale to get a different perspective of friend count. Log scales allow a large range to be displayed without small values being compressed down into the bottom of the graph.
 ```{r}
-#qplot(x=friend_count, data =pf)
 summary(pf$friend_count)
-#getting log10 of 0 is undefined so the min - where people have 0 friends
-#would yield a result of negative infinity. In order to avoid this we add # 1 to the friend count
+#getting log10 of 0 is undefined so the min - where people have 0 friends would yield a result of negative infinity. In order to avoid this we add 1 to the friend count
 summary(log10(pf$friend_count +1))
 ```
 
@@ -173,10 +166,8 @@ grid.arrange(p1, p2, p3, ncol=1)
 ***
 
 ### Add a Scaling Layer
-Notes:
-
+The above graphs can alos be acheived using a scaling layer with ggplot
 ```{r Add a Scaling Layer}
-#Alternative method for above
 p1 <- ggplot(aes(x=friend_count), data=pf) + geom_histogram()
 p2<- p1 + scale_x_log10()
 p3<- p1 + scale_x_sqrt()
@@ -190,11 +181,10 @@ grid.arrange(p1, p2, p3, ncol=1)
 
 
 ### Frequency Polygons
-Comparing male and female friend counts in an overlay with a *frequency polygon* rather than two histograms side by side.
-Set color = gender so we get two different coloured lines for each of the genders.
+Comparing male and female friend counts in an overlay with a *frequency polygon* rather than two histograms side by side. Set color = gender so we get two different coloured lines for each of the genders.
+
 Change y axis to show prportions instead of counts:
 y = ..count../sum(..count..)
-
 
 ```{r Frequency Polygons}
 ggplot(aes(x = friend_count, y = ..count../sum(..count..)),
@@ -208,8 +198,7 @@ ggplot(aes(x = friend_count, y = ..count../sum(..count..)),
 ***
 
 ### Likes on the Web
-Notes:
-
+Let's look at "likes" by gender
 ```{r Likes on the Web}
 ggplot(aes(x = www_likes), data = subset(pf, !is.na(gender))) +
   geom_freqpoly(aes(color=gender)) +
@@ -219,14 +208,10 @@ ggplot(aes(x = www_likes), data = subset(pf, !is.na(gender))) +
 
 
 ***
+Let's see what the www_like count is for males and which gender has more likes.
+We split the likes by gender and perform the sum function:
 ```{r}
-#What's the www_like count for males?
-#Which gender has more likes?
-
-#Want to spli the like by gender and perform the sum function:
 by(pf$www_likes, pf$gender, sum)
-
-
 ```
 
 
@@ -235,7 +220,7 @@ Notes:
 With boxplots the continuous variable will be displayed on the y axis and the grouping/categorical variable will be on the x axis
 
 * The boxes cover the middle 50% of values or what's called the IQR 
-* The dots represent the outliers - there a re a lot present in this graph
+* The dots represent the outliers - there are a lot present in this graph
 * Outliers are points that lie outside of 1.5 times the IQR from the median
 * The horizontal line inside the boxes is the median
 
@@ -246,8 +231,8 @@ ggplot(aes(x = gender, y=friend_count),
 ```
 
 #### Adjust the code to focus on users who have friend counts between 0 and 1000.
-* When you use the *ylim* or *scale_y_continuous* paramater you're actually removing points from the calculations.
-* A better way to do this is to use *coord_cartesian*
+When you use the *ylim* or *scale_y_continuous* paramater you're actually removing points from the calculations.
+A better way to do this is to use *coord_cartesian* as it won't affect the median and IQR values.
 ```{r}
 ggplot(aes(x = gender, y=friend_count), 
        data = subset(pf, !is.na(gender))) +
@@ -259,7 +244,7 @@ ggplot(aes(x = gender, y=friend_count),
 ***
 
 ### Box Plots, Quartiles, and Friendships
-Notes:
+Zoom in on the box plots to get a better look at them and compare the plots with the information gleamed from the summary() function
 ```{r Box Plots, Quartiles, and Friendships}
 ggplot(aes(x = gender, y=friendships_initiated), 
        data = subset(pf, !is.na(gender))) +
@@ -271,14 +256,13 @@ by(pf$friendships_initiated, pf$gender, summary)
 ***
 
 ### Getting Logical
-Notes:
 
 ```{r Getting Logical}
 summary(pf$mobile_likes)
 
 #See if someone has actually checked in on a mobile device rather than the number of times:
 summary(pf$mobile_likes>0)
-#create our own variable to track whather a user had logged in on mbile
+#create our own variable to track whether a user had logged in on mobile
 mobile_check_in <- NA
 #Assign value of 1 if user has checked in on mobile and 0 otherwise:
 pf$mobile_check_in <- ifelse(pf$mobile_likes>0, 1, 0)
@@ -295,8 +279,4 @@ percent_mobile_check_in
 ```{r}
 #install.packages('knitr', dependencies = T)
 library(knitr)
-setwd("/Users/Sian/Intro_data_analysis/EDA/Lesson 3")
 ```
-
-Click **KnitHTML** to see all of your hard work and to have an html
-page of this lesson, your answers, and your notes!
